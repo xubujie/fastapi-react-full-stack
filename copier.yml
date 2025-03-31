@@ -3,11 +3,6 @@ project_name:
   help: Name of your project
   default: fastapi-vite-app
 
-project_description:
-  type: str
-  help: Brief description of your project
-  default: A modern FastAPI and React application with Vite
-
 _exclude:
   # Global
   - .git
@@ -50,4 +45,4 @@ _exclude:
 _answers_file: .copier/.copier-answers.yml
 
 _tasks:
-  - ["python", ".copier/post_gen_project.py"]
+  - ["{{ _copier_python }}", .copier/update_dotenv.py]
