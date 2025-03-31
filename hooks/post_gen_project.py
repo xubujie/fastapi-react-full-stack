@@ -1,13 +1,10 @@
 #!/usr/bin/env python
 """
-Post-generation script for cookiecutter-fastapi-vite
+Post-generation script for fastapi-vite
 """
 import os
 import shutil
 import subprocess
-
-# Get the project directory
-PROJECT_DIRECTORY = os.path.realpath(os.path.curdir)
 
 
 def run_command(cmd, cwd=None):
@@ -24,202 +21,14 @@ def main():
     """Main post-generation function"""
     print("🚀 Running post-generation tasks...")
 
-    # Setup initial git repo
-    subprocess.run(["git", "init"], cwd=PROJECT_DIRECTORY, check=False)
-
-    # Setup backend directories
-    os.makedirs(
-        os.path.join(PROJECT_DIRECTORY, "backend", "app", "api", "routes"),
-        exist_ok=True,
-    )
-    os.makedirs(
-        os.path.join(PROJECT_DIRECTORY, "backend", "app", "core"), exist_ok=True
-    )
-    os.makedirs(
-        os.path.join(PROJECT_DIRECTORY, "backend", "app", "models"), exist_ok=True
-    )
-    os.makedirs(
-        os.path.join(PROJECT_DIRECTORY, "backend", "app", "services"), exist_ok=True
-    )
-
-    # Create __init__.py files
-    python_dirs = [
-        "backend/app",
-        "backend/app/api",
-        "backend/app/api/routes",
-        "backend/app/core",
-        "backend/app/models",
-        "backend/app/services",
-    ]
-
-    for dir_path in python_dirs:
-        init_file = os.path.join(PROJECT_DIRECTORY, dir_path, "__init__.py")
-        if not os.path.exists(init_file):
-            with open(init_file, "w") as f:
-                f.write("# Auto-generated file\n")
-
-    # Create FastAPI routes
-    routes_init_content = """from fastapi import APIRouter
-from app.api.routes import hello
-
-api_router = APIRouter()
-api_router.include_router(hello.router, prefix="/hello", tags=["hello"])
-"""
-
-    with open(
-        os.path.join(
-            PROJECT_DIRECTORY, "backend", "app", "api", "routes", "__init__.py"
-        ),
-        "w",
-    ) as f:
-        f.write(routes_init_content)
-
-    hello_route_content = """from fastapi import APIRouter
-
-router = APIRouter()
-
-@router.get("")
-async def hello():
-    return {"message": "Hello from FastAPI!"}
-"""
-
-    with open(
-        os.path.join(PROJECT_DIRECTORY, "backend", "app", "api", "routes", "hello.py"),
-        "w",
-    ) as f:
-        f.write(hello_route_content)
-
-    # Create main.py
-    main_content = """from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-
-from app.core.config import settings
-from app.api.routes import api_router
-
-app = FastAPI(
-    title=settings.PROJECT_NAME,
-    openapi_url=f"{settings.API_V1_STR}/openapi.json",
-    debug=settings.DEBUG
-)
-
-# Configure CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.BACKEND_CORS_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Include API router
-app.include_router(api_router, prefix=settings.API_V1_STR)
-
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy"}
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
-"""
-
-    with open(os.path.join(PROJECT_DIRECTORY, "backend", "app", "main.py"), "w") as f:
-        f.write(main_content)
-
-    # Create config.py
-    config_content = """from pydantic_settings import BaseSettings
-from typing import List
-import os
-from dotenv import load_dotenv
-
-# Load environment variables from .env file
-load_dotenv()
-
-class Settings(BaseSettings):
-    API_V1_STR: str = "/api/v1"
-    PROJECT_NAME: str = "FastAPI React Boilerplate"
-    BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:5173", "http://localhost:3000"]
-    DEBUG: bool = os.getenv("DEBUG", "False").lower() == "true"
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///app.db")
-    
-    class Config:
-        case_sensitive = True
-        
-settings = Settings()
-"""
-
-    with open(
-        os.path.join(PROJECT_DIRECTORY, "backend", "app", "core", "config.py"), "w"
-    ) as f:
-        f.write(config_content)
-
-    # Create requirements.txt with latest versions
-    requirements_content = """fastapi>=0.110.0
-uvicorn>=0.27.0
-pydantic>=2.6.0
-pydantic-settings>=2.2.1
-python-dotenv>=1.0.0
-sqlmodel>=0.0.14
-alembic>=1.13.1
-pytest>=8.0.0
-httpx>=0.27.0
-"""
-
-    with open(os.path.join(PROJECT_DIRECTORY, "backend", "requirements.txt"), "w") as f:
-        f.write(requirements_content)
-
-    # Create .dockerignore files
-    docker_ignore_backend = """
-.git
-.env
-venv
-.venv
-__pycache__
-*.pyc
-*.pyo
-*.pyd
-.Python
-env
-.coverage
-htmlcov/
-.pytest_cache/
-.tox/
-.vscode/
-.idea/
-*.db
-"""
-
-    with open(os.path.join(PROJECT_DIRECTORY, "backend", ".dockerignore"), "w") as f:
-        f.write(docker_ignore_backend)
-
-    docker_ignore_frontend = """
-.git
-node_modules
-dist
-.DS_Store
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.vscode/
-.idea/
-"""
-
-    with open(os.path.join(PROJECT_DIRECTORY, "frontend", ".dockerignore"), "w") as f:
-        f.write(docker_ignore_frontend)
-
-    # Setup frontend using appropriate Vite template
-    frontend_dir = os.path.join(PROJECT_DIRECTORY, "frontend")
+    # Setup frontend
+    frontend_dir = os.path.join(os.path.realpath(os.path.curdir), "frontend")
 
     # Remove default frontend placeholder if anything exists
     if os.path.exists(frontend_dir):
         for item in os.listdir(frontend_dir):
             item_path = os.path.join(frontend_dir, item)
-            if item != ".dockerignore" and item != ".gitignore":
+            if not item.startswith("."):  # Preserve dot files
                 if os.path.isdir(item_path):
                     shutil.rmtree(item_path)
                 else:
@@ -227,179 +36,368 @@ yarn-error.log*
     else:
         os.makedirs(frontend_dir, exist_ok=True)
 
-    # Set up frontend with shadcn/ui template by default
-    print("Setting up frontend with shadcn/ui template...")
-    run_command(
-        "pnpm create vite --template vite-react-ts-shadcn-starter .", cwd=frontend_dir
-    )
+    # Set up frontend with modern stack
+    print("📦 Setting up frontend with modern React + Vite + TypeScript stack...")
 
-    # Install dependencies
-    print("Installing frontend dependencies...")
+    # Create frontend with Vite
+    run_command("pnpm create vite . --template react-ts", cwd=frontend_dir)
+
+    # Install core dependencies
+    print("📚 Installing frontend dependencies...")
     run_command("pnpm install", cwd=frontend_dir)
 
-    # Add additional dependencies by default
-    print("Adding additional dependencies...")
-    run_command("pnpm add zustand @tanstack/react-query axios", cwd=frontend_dir)
+    # Add Tailwind CSS and other dependencies
+    print("🎨 Adding UI and state management libraries...")
+    run_command(
+        "pnpm add tailwindcss @tailwindcss/vite postcss autoprefixer @tailwindcss/forms @tailwindcss/typography @tailwindcss/container-queries",
+        cwd=frontend_dir,
+    )
 
-    # Create App.tsx with FastAPI connection
-    app_tsx_content = """import { useState, useEffect } from 'react'
-    import axios from 'axios'
-    import './App.css'
+    # Add other modern frontend dependencies
+    run_command(
+        "pnpm add @tanstack/react-query @tanstack/react-query-devtools axios zustand @hookform/resolvers zod react-hook-form @radix-ui/react-icons clsx tailwind-merge class-variance-authority",
+        cwd=frontend_dir,
+    )
 
-    const api = axios.create({
-        baseURL: 'http://localhost:8000/api/v1'
-    })
+    # Add development dependencies
+    print("🛠️ Adding development tools...")
+    run_command(
+        "pnpm add -D @typescript-eslint/eslint-plugin @typescript-eslint/parser eslint eslint-config-prettier eslint-plugin-react-hooks eslint-plugin-react-refresh prettier @types/node",
+        cwd=frontend_dir,
+    )
 
-    function App() {
-        const [message, setMessage] = useState('Loading...')
-        const [isLoading, setIsLoading] = useState(true)
-        const [error, setError] = useState<string | null>(null)
+    # Update index.css for Tailwind
+    index_css_content = """@import "tailwindcss";"""
 
-        useEffect(() => {
-            const fetchData = async () => {
-                try {
-                    const { data } = await api.get('/hello')
-                    setMessage(data.message)
-                    setIsLoading(false)
-                } catch (err) {
-                    setError(err instanceof Error ? err.message : 'An error occurred')
-                    setIsLoading(false)
-                }
-            }
+    with open(os.path.join(frontend_dir, "src", "index.css"), "w") as f:
+        f.write(index_css_content)
 
-            fetchData()
-        }, [])
-
-        return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-background">
-                <div className="container flex flex-col items-center gap-4 px-4 py-8 md:px-6">
-                    <h1 className="text-4xl font-bold tracking-tighter">FastAPI + React App</h1>
-                    {isLoading ? (
-                        <div className="flex items-center gap-2">
-                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
-                            <p>Loading data from API...</p>
-                        </div>
-                    ) : error ? (
-                        <div className="p-4 bg-destructive/10 text-destructive rounded-lg">
-                            <p>Error: {error}</p>
-                        </div>
-                    ) : (
-                        <div className="text-center space-y-2">
-                            <p className="text-lg">Message from backend:</p>
-                            <p className="text-2xl font-semibold text-primary">{message}</p>
-                        </div>
-                    )}
-                </div>
-            </div>
-        )
+    # Create tsconfig.json
+    tsconfig_content = """{
+  "files": [],
+  "references": [
+    {
+      "path": "./tsconfig.app.json"
+    },
+    {
+      "path": "./tsconfig.node.json"
     }
+  ],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  }
+}"""
 
-    export default App"""
+    with open(os.path.join(frontend_dir, "tsconfig.json"), "w") as f:
+        f.write(tsconfig_content)
+
+    # Update tsconfig.app.json
+    tsconfig_app_content = """{
+  "extends": "@tsconfig/vite-react/tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["src"]
+}"""
+
+    with open(os.path.join(frontend_dir, "tsconfig.app.json"), "w") as f:
+        f.write(tsconfig_app_content)
+
+    # Create vite.config.ts
+    vite_config_content = """import path from "path"
+import tailwindcss from "@tailwindcss/vite"
+import react from "@vitejs/plugin-react"
+import { defineConfig } from "vite"
+
+export default defineConfig({
+  plugins: [react(), tailwindcss()],
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+    },
+  },
+})"""
+
+    with open(os.path.join(frontend_dir, "vite.config.ts"), "w") as f:
+        f.write(vite_config_content)
+
+    # Initialize shadcn-ui
+    print("🎨 Setting up shadcn/ui...")
+    run_command("pnpm dlx shadcn@latest init --yes", cwd=frontend_dir)
+
+    # Add all shadcn components
+    print("📦 Adding all shadcn/ui components...")
+    shadcn_components = [
+        "accordion",
+        "alert",
+        "alert-dialog",
+        "aspect-ratio",
+        "avatar",
+        "badge",
+        "breadcrumb",
+        "button",
+        "calendar",
+        "card",
+        "carousel",
+        "checkbox",
+        "collapsible",
+        "combobox",
+        "command",
+        "context-menu",
+        "data-table",
+        "date-picker",
+        "dialog",
+        "drawer",
+        "dropdown-menu",
+        "form",
+        "hover-card",
+        "input",
+        "label",
+        "menubar",
+        "navigation-menu",
+        "pagination",
+        "popover",
+        "progress",
+        "radio-group",
+        "scroll-area",
+        "select",
+        "separator",
+        "sheet",
+        "skeleton",
+        "slider",
+        "switch",
+        "table",
+        "tabs",
+        "textarea",
+        "toast",
+        "toggle",
+        "toggle-group",
+        "tooltip",
+    ]
+
+    for component in shadcn_components:
+        run_command(f"pnpm dlx shadcn@latest add {component}", cwd=frontend_dir)
+
+    # Create modular frontend structure
+    os.makedirs(os.path.join(frontend_dir, "src", "lib"), exist_ok=True)
+    os.makedirs(os.path.join(frontend_dir, "src", "components", "ui"), exist_ok=True)
+    os.makedirs(
+        os.path.join(frontend_dir, "src", "components", "common"), exist_ok=True
+    )
+    os.makedirs(os.path.join(frontend_dir, "src", "features"), exist_ok=True)
+    os.makedirs(os.path.join(frontend_dir, "src", "hooks"), exist_ok=True)
+    os.makedirs(os.path.join(frontend_dir, "src", "services"), exist_ok=True)
+    os.makedirs(os.path.join(frontend_dir, "src", "utils"), exist_ok=True)
+    os.makedirs(os.path.join(frontend_dir, "src", "types"), exist_ok=True)
+    os.makedirs(os.path.join(frontend_dir, "src", "store"), exist_ok=True)
+
+    # Create API service
+    api_service_content = """import axios from 'axios'
+
+export const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+})
+
+// Request interceptor
+api.interceptors.request.use(
+  (config) => {
+    // Add auth token if exists
+    const token = localStorage.getItem('token')
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+  },
+  (error) => Promise.reject(error)
+)
+
+// Response interceptor
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response?.status === 401) {
+      // Handle unauthorized
+      localStorage.removeItem('token')
+    }
+    return Promise.reject(error)
+  }
+)"""
+
+    with open(os.path.join(frontend_dir, "src", "services", "api.ts"), "w") as f:
+        f.write(api_service_content)
+
+    # Create store setup
+    store_content = """import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
+
+interface AuthState {
+  token: string | null
+  setToken: (token: string | null) => void
+}
+
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
+      token: null,
+      setToken: (token) => set({ token }),
+    }),
+    {
+      name: 'auth-storage',
+    }
+  )
+)"""
+
+    with open(os.path.join(frontend_dir, "src", "store", "auth.ts"), "w") as f:
+        f.write(store_content)
+
+    # Create custom hooks
+    hooks_content = """import { useQuery, useMutation } from '@tanstack/react-query'
+import { api } from '@/services/api'
+
+export const useAuth = () => {
+  const login = useMutation({
+    mutationFn: async (credentials: { email: string; password: string }) => {
+      const { data } = await api.post('/auth/login', credentials)
+      return data
+    },
+  })
+
+  const logout = () => {
+    // Implement logout logic
+  }
+
+  return { login, logout }
+}
+
+export const useUser = () => {
+  return useQuery({
+    queryKey: ['user'],
+    queryFn: async () => {
+      const { data } = await api.get('/users/me')
+      return data
+    },
+  })
+}"""
+
+    with open(os.path.join(frontend_dir, "src", "hooks", "auth.ts"), "w") as f:
+        f.write(hooks_content)
+
+    # Create utils
+    utils_content = """export const formatDate = (date: string) => {
+  return new Intl.DateTimeFormat('en-US', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(date))
+}
+
+export const classNames = (...classes: (string | boolean | undefined)[]) => {
+  return classes.filter(Boolean).join(' ')
+}"""
+
+    with open(os.path.join(frontend_dir, "src", "utils", "helpers.ts"), "w") as f:
+        f.write(utils_content)
+
+    # Create modern App.tsx with modular structure
+    app_tsx_content = """import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useAuth } from '@/hooks/auth'
+import { api } from '@/services/api'
+import { useAuthStore } from '@/store/auth'
+import { useState } from 'react'
+
+// Create a client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 1000,
+      retry: 1,
+    },
+  },
+})
+
+function App() {
+  const [message] = useState('Welcome to FastAPI + React!')
+  const { login } = useAuth()
+  const setToken = useAuthStore((state) => state.setToken)
+
+  const handleLogin = async () => {
+    try {
+      const result = await login.mutateAsync({
+        email: 'test@example.com',
+        password: 'password',
+      })
+      setToken(result.token)
+    } catch (error) {
+      console.error('Login failed:', error)
+    }
+  }
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <div className="min-h-screen bg-background p-8">
+        <div className="container mx-auto">
+          <Card className="w-full max-w-2xl mx-auto">
+            <CardHeader>
+              <CardTitle className="text-4xl font-bold tracking-tight">{message}</CardTitle>
+              <CardDescription className="text-lg">
+                Start building your full-stack application with FastAPI and React
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex justify-center gap-4">
+                <Button size="lg" onClick={handleLogin}>
+                  {login.isPending ? 'Logging in...' : 'Get Started'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
+  )
+}
+
+export default App"""
 
     with open(os.path.join(frontend_dir, "src", "App.tsx"), "w") as f:
         f.write(app_tsx_content)
 
-    # Create a Dockerfile for the frontend
-    dockerfile_frontend = """FROM node:20-alpine
+    # Create .env file for frontend
+    frontend_env = """VITE_API_URL=http://localhost:8000/api/v1"""
 
-WORKDIR /app
-
-# Install pnpm
-RUN npm install -g pnpm
-
-# Copy package files
-COPY package.json pnpm-lock.yaml* ./
-
-# Install dependencies
-RUN pnpm install
-
-# Copy project files
-COPY . .
-
-# Expose port
-EXPOSE ${FRONTEND_PORT:-5173}
-
-# Start development server
-CMD ["pnpm", "dev", "--", "--host", "0.0.0.0"]
-"""
-
-    with open(os.path.join(frontend_dir, "Dockerfile"), "w") as f:
-        f.write(dockerfile_frontend)
-
-    # Create docker-compose.yml
-    docker_compose_content = """version: '3.8'
-
-services:
-    backend:
-        build:
-            context: ./backend
-            dockerfile: Dockerfile
-        ports:
-            - "8000:8000"
-        volumes:
-            - ./backend:/app
-        environment:
-            - DEBUG=True
-            - DATABASE_URL=sqlite:///app.db
-        command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-
-    frontend:
-        build:
-            context: ./frontend
-            dockerfile: Dockerfile
-        ports:
-            - "5173:5173"
-        volumes:
-            - ./frontend:/app
-            - /app/node_modules
-        environment:
-            - VITE_API_URL=http://localhost:8000/api/v1
-        depends_on:
-            - backend
-"""
-
-    with open(os.path.join(PROJECT_DIRECTORY, "docker-compose.yml"), "w") as f:
-        f.write(docker_compose_content)
-
-    # Create .env file
-    env_content = """DEBUG=True
-DATABASE_URL=sqlite:///app.db
-"""
-
-    with open(os.path.join(PROJECT_DIRECTORY, ".env"), "w") as f:
-        f.write(env_content)
-
-    # Setup SQLModel and Alembic by default
-    os.makedirs(os.path.join(PROJECT_DIRECTORY, "backend", "alembic"), exist_ok=True)
-    os.makedirs(
-        os.path.join(PROJECT_DIRECTORY, "backend", "alembic", "versions"), exist_ok=True
-    )
-
-    # Create base model
-    base_model_content = """from sqlmodel import SQLModel as _SQLModel
-
-class SQLModel(_SQLModel):
-    class Config:
-        arbitrary_types_allowed = True
-"""
-
-    with open(
-        os.path.join(PROJECT_DIRECTORY, "backend", "app", "models", "base.py"), "w"
-    ) as f:
-        f.write(base_model_content)
+    with open(os.path.join(frontend_dir, ".env"), "w") as f:
+        f.write(frontend_env)
 
     print("✅ Post-generation tasks completed!")
     print("\n🎉 Your project is ready! Next steps:")
-    print(f"  cd {os.path.basename(PROJECT_DIRECTORY)}")
-    print("\n🐳 To use Docker:")
-    print("  docker-compose up")
+    print(f"  cd {os.path.basename(os.path.realpath(os.path.curdir))}")
+    print("\n🚀 To start development:")
+    print("  1. Start the backend:")
+    print("     cd backend && uvicorn app.main:app --reload")
+    print("  2. Start the frontend:")
+    print("     cd frontend && pnpm dev")
     print("\n📋 Setup summary:")
-    print("  ✅ Backend: FastAPI with SQLModel and Alembic")
-    print("  ✅ Frontend: React with Vite, shadcn/ui, Zustand, and React Query")
-    print("  ✅ Docker: Containerized development environment")
+    print("  ✅ Frontend: React + Vite + TypeScript")
+    print("  ✅ UI: shadcn/ui (all components)")
+    print("  ✅ State: TanStack Query + Zustand")
+    print("  ✅ Forms: React Hook Form + Zod")
+    print("  ✅ Development: ESLint + Prettier")
+    print("  ✅ Structure: Modular with services, hooks, and utils")
     print("\n🌐 Access your application at:")
     print("  Frontend: http://localhost:5173")
-    print("  Backend API: http://localhost:8000/api/v1/hello")
+    print("  Backend API: http://localhost:8000/api/v1")
     print("  API Docs: http://localhost:8000/docs")
 
 
