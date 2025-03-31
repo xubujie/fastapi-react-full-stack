@@ -1,7 +1,4 @@
-#!/usr/bin/env python
-"""
-Post-generation script for fastapi-vite
-"""
+from copier import run_copy
 import os
 import shutil
 import subprocess
@@ -17,8 +14,8 @@ def run_command(cmd, cwd=None):
         return False
 
 
-def main():
-    """Main post-generation function"""
+def post_generation(answers: dict):
+    """Post-generation function for Copier"""
     print("🚀 Running post-generation tasks...")
 
     # Setup frontend
@@ -37,7 +34,7 @@ def main():
         os.makedirs(frontend_dir, exist_ok=True)
 
     # Set up frontend with modern stack
-    print("📦 Setting up frontend with modern React + Vite + TypeScript stack...")
+    print("📦 Setting up frontend with React + Vite + TypeScript stack...")
 
     # Create frontend with Vite
     run_command("pnpm create vite . --template react-ts", cwd=frontend_dir)
@@ -399,7 +396,3 @@ export default App"""
     print("  Frontend: http://localhost:5173")
     print("  Backend API: http://localhost:8000/api/v1")
     print("  API Docs: http://localhost:8000/docs")
-
-
-if __name__ == "__main__":
-    main()

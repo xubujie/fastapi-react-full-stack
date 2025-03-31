@@ -11,7 +11,7 @@ project_description:
 _subdirectory: template
 
 _tasks:
-  - "cd {{ _copier_conf.dst_path }} && python hooks/post_gen.py"
+  - ["{{ _copier_python }}", .copier/update_dotenv.py]
 
 _migrations:
   - version: 0.1.0
