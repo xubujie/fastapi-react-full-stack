@@ -1,0 +1,21 @@
+project_name:
+  type: str
+  help: Name of your project
+  default: fastapi-vite-app
+
+project_description:
+  type: str
+  help: Brief description of your project
+  default: A modern FastAPI and React application with Vite
+
+_subdirectory: template
+
+_tasks:
+  - "cd {{ _copier_conf.dst_path }} && python hooks/post_gen.py"
+
+_migrations:
+  - version: 0.1.0
+    before:
+      - echo "Starting project generation..."
+    after:
+      - echo "Project generation completed!"
