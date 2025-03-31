@@ -1,0 +1,317 @@
+# Frontend (React 19 + Vite + Tailwind 4)
+
+## Code Style
+
+- Use functional components with TypeScript
+- Structure files: primary component export first, helper components, hooks
+- Prefer named exports (`export function Component()`)
+- Use proper React 19 patterns and hooks
+- Prefer type than interface to define types
+- Use React router for routing
+
+```tsx
+// Component with TypeScript
+export function TodoList({ userId }: { userId: string }) {
+  const { data, isLoading } = useTodos(userId);
+
+  if (isLoading) return <Spinner />;
+
+  return (
+    <div className="space-y-4">
+      {data?.map((todo) => (
+        <TodoItem key={todo.id} todo={todo} />
+      ))}
+    </div>
+  );
+}
+
+function TodoItem({ todo }: { todo: Todo }) {
+  return <div>{todo.title}</div>;
+}
+```
+
+## State & Data Fetching
+
+- Use Zustand for global state
+- Use TanStack Query for API data fetching and caching
+- Implement custom hooks for reusable logic
+
+```tsx
+// Zustand store
+import { create } from "zustand";
+
+export const useAuthStore = create<AuthStore>((set) => ({
+  user: null,
+  login: async (credentials) => {
+    const user = await api.login(credentials);
+    set({ user });
+  },
+  logout: () => set({ user: null }),
+}));
+
+// React Query hook
+import { useQuery } from "@tanstack/react-query";
+
+function useTodos(userId: string) {
+  return useQuery({
+    queryKey: ["todos", userId],
+    queryFn: () => api.getTodos(userId),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+```
+
+## API Calls
+
+- Use Axios with interceptors for API communication
+- Centralize API requests in dedicated service modules
+
+```tsx
+// API client
+import axios from "axios";
+
+const api = axios.create({
+  baseURL: "/api",
+  headers: { "Content-Type": "application/json" },
+});
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+// API service
+export const todosApi = {
+  getTodos: (userId: string) =>
+    api.get<Todo[]>(`/users/${userId}/todos`).then((res) => res.data),
+  createTodo: (todo: TodoCreate) =>
+    api.post<Todo>("/todos", todo).then((res) => res.data),
+};
+```
+
+## UI & Forms
+
+- Use Radix UI primitives with Tailwind for styling
+- Use React Hook Form with Zod for validation
+- Implement responsive designs with Tailwind's mobile-first approach
+
+```tsx
+// Form with Zod validation
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+
+const formSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8),
+});
+
+export function LoginForm() {
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: { email: "", password: "" },
+  });
+
+  const onSubmit = (values: z.infer<typeof formSchema>) => {
+    // Submit logic
+  };
+
+  return (
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <div>
+        <Input {...form.register("email")} placeholder="Email" />
+        {form.formState.errors.email && (
+          <p className="text-red-500 text-sm mt-1">
+            {form.formState.errors.email.message}
+          </p>
+        )}
+      </div>
+      <Button type="submit">Login</Button>
+    </form>
+  );
+}
+```
+
+# Backend (FastAPI + SQLModel + Pydantic v2)
+
+## Project Structure
+
+- Organize by feature area, not technical layer
+- Maintain separation of concerns: routes → services → repositories
+- Use dependency injection for services and database access
+
+```
+app/
+├── api/                # API routes and dependencies
+│   ├── deps.py         # Common dependencies
+│   └── v1/             # API v1 routes
+│       └── todos.py    # Todo endpoints
+├── core/               # Core functionality
+│   ├── config.py       # Settings and configuration
+│   └── security.py     # Auth and security
+├── db/                 # Database
+│   ├── session.py      # Database session
+│   └── base.py         # Base SQLModel
+├── models/             # SQLModel models
+├── schemas/            # Pydantic schemas
+├── services/           # Business logic
+├── main.py             # App entry point
+```
+
+## FastAPI Routes
+
+- Group routes by resource with APIRouter and tags
+- Use proper status codes and response models
+- Leverage FastAPI's dependency injection
+
+```python
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlmodel import Session
+
+from app.api.deps import get_current_user, get_db
+from app.models.todo import Todo
+from app.schemas.todo import TodoCreate, TodoResponse
+
+router = APIRouter(prefix="/todos", tags=["todos"])
+
+@router.get("/", response_model=list[TodoResponse])
+def list_todos(
+    db: Session = Depends(get_db),
+    user = Depends(get_current_user),
+    skip: int = 0,
+    limit: int = 100,
+):
+    todos = db.query(Todo).filter(Todo.user_id == user.id).offset(skip).limit(limit).all()
+    return todos
+
+@router.post("/", response_model=TodoResponse, status_code=status.HTTP_201_CREATED)
+def create_todo(
+    todo_in: TodoCreate,
+    db: Session = Depends(get_db),
+    user = Depends(get_current_user),
+):
+    todo = Todo(**todo_in.model_dump(), user_id=user.id)
+    db.add(todo)
+    db.commit()
+    db.refresh(todo)
+    return todo
+```
+
+## Data Validation & Models
+
+- Use Pydantic v2 for request/response schemas
+- Use SQLModel for database models
+- Implement comprehensive validation with Field
+
+```python
+from pydantic import BaseModel, Field, EmailStr
+from sqlmodel import SQLModel, Field as SQLField
+from datetime import datetime
+from typing import Optional
+
+# Pydantic schema
+class UserCreate(BaseModel):
+    email: EmailStr = Field(description="User email")
+    password: str = Field(min_length=8)
+    full_name: str = Field(min_length=1)
+
+# SQLModel model
+class User(SQLModel, table=True):
+    id: Optional[int] = SQLField(default=None, primary_key=True)
+    email: str = SQLField(unique=True, index=True)
+    full_name: str
+    hashed_password: str
+    is_active: bool = True
+    created_at: datetime = SQLField(default_factory=datetime.utcnow)
+```
+
+## Authentication
+
+- Use JWT tokens with proper expiration
+- Implement password hashing with bcrypt
+- Use OAuth2PasswordBearer for token handling
+
+```python
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from passlib.context import CryptContext
+from jose import jwt, JWTError
+from datetime import datetime, timedelta
+
+# Password hashing
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# Token creation
+def create_access_token(data: dict, expires_delta: timedelta = timedelta(minutes=15)):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + expires_delta
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+# Auth dependency
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
+
+def get_current_user(token: str = Depends(oauth2_scheme)):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    user = get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+    return user
+```
+
+## Error Handling & Testing
+
+- Use custom exception handlers for business logic errors
+- Write tests with pytest and FastAPI TestClient
+- Use dependency overrides for testing
+
+```python
+# Custom exception handler
+from fastapi import FastAPI, Request, status
+from fastapi.responses import JSONResponse
+
+app = FastAPI()
+
+class TodoNotFoundError(Exception):
+    pass
+
+@app.exception_handler(TodoNotFoundError)
+async def todo_not_found_handler(request: Request, exc: TodoNotFoundError):
+    return JSONResponse(
+        status_code=status.HTTP_404_NOT_FOUND,
+        content={"detail": "Todo not found"},
+    )
+
+# Test example
+from fastapi.testclient import TestClient
+import pytest
+
+@pytest.fixture
+def test_client():
+    from app.main import app
+    from app.api.deps import get_db
+
+    def override_get_db():
+        # Return test database session
+        pass
+
+    app.dependency_overrides[get_db] = override_get_db
+    return TestClient(app)
+
+def test_list_todos(test_client, auth_headers):
+    response = test_client.get("/todos/", headers=auth_headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert isinstance(data, list)
+```

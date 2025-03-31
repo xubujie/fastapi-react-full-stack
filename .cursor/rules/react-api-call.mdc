@@ -1,0 +1,15 @@
+---
+description: 
+globs: **/*.ts,**/*.tsx
+alwaysApply: false
+---
+- Create an Axios instance with default configurations
+- Use interceptors for request/response handling and error management
+- Implement proper error handling and retries
+- Use cancel tokens to cancel ongoing requests when needed
+- Utilize Axios with React Query for efficient data fetching
+- Use `useQuery` for fetching data and `useMutation` for creating/updating/deleting data
+- Implement proper error handling and loading states
+- Utilize query keys effectively for caching and refetching
+- Use `queryClient.invalidateQueries` to refetch data when needed
+- Implement optimistic updates for a smoother user experience

@@ -1,0 +1,13 @@
+---
+description: 
+globs: **/*.ts,**/*.tsx
+alwaysApply: false
+---
+
+- Use functional components with hooks instead of class components
+- Implement proper prop type validation using PropTypes or TypeScript
+- Utilize memoization with `useMemo` and `useCallback` for performance optimization
+- Manage global state with state management libraries like Zustand
+- Implement error boundaries to catch and handle errors gracefully
+- Prefer type than interface to define types
+- Use proper React 19 patterns and hooks

@@ -1,0 +1,11 @@
+---
+description: 
+globs: **/*.py
+alwaysApply: false
+---
+- Use `Depends` for dependency injection to manage request lifecycles and improve code reusability.
+- Implement proper error handling with custom exception handlers.
+- Use Pydantic models for request/response validation and serialization.
+- Leverage async/await for better performance with I/O-bound operations.
+- Use `BackgroundTasks` for non-blocking operations post-request.
+- Use `app/core/config.py` for config
