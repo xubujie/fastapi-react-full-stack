@@ -1,7 +1,7 @@
-from copier import run_copy
 import os
 import shutil
 import subprocess
+import sys
 
 
 def run_command(cmd, cwd=None):
@@ -11,6 +11,8 @@ def run_command(cmd, cwd=None):
         return True
     except subprocess.CalledProcessError as e:
         print(f"Command failed: {e}")
+        # Exit with error code when a command fails
+        sys.exit(1)
         return False
 
 
@@ -130,57 +132,7 @@ export default defineConfig({
 
     # Add all shadcn components
     print("📦 Adding all shadcn/ui components...")
-    shadcn_components = [
-        "accordion",
-        "alert",
-        "alert-dialog",
-        "aspect-ratio",
-        "avatar",
-        "badge",
-        "breadcrumb",
-        "button",
-        "calendar",
-        "card",
-        "carousel",
-        "checkbox",
-        "collapsible",
-        "combobox",
-        "command",
-        "context-menu",
-        "data-table",
-        "date-picker",
-        "dialog",
-        "drawer",
-        "dropdown-menu",
-        "form",
-        "hover-card",
-        "input",
-        "label",
-        "menubar",
-        "navigation-menu",
-        "pagination",
-        "popover",
-        "progress",
-        "radio-group",
-        "scroll-area",
-        "select",
-        "separator",
-        "sheet",
-        "skeleton",
-        "slider",
-        "switch",
-        "table",
-        "tabs",
-        "textarea",
-        "toast",
-        "toggle",
-        "toggle-group",
-        "tooltip",
-    ]
-
-    for component in shadcn_components:
-        run_command(f"pnpm dlx shadcn@latest add {component}", cwd=frontend_dir)
-
+    run_command("pnpm dlx shadcn@latest add", cwd=frontend_dir)
     # Create modular frontend structure
     os.makedirs(os.path.join(frontend_dir, "src", "lib"), exist_ok=True)
     os.makedirs(os.path.join(frontend_dir, "src", "components", "ui"), exist_ok=True)
@@ -396,3 +348,8 @@ export default App"""
     print("  Frontend: http://localhost:5173")
     print("  Backend API: http://localhost:8000/api/v1")
     print("  API Docs: http://localhost:8000/docs")
+
+
+# Call the post_generation function when the script is executed
+if __name__ == "__main__":
+    post_generation({})

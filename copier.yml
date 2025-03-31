@@ -10,6 +10,7 @@ project_description:
 
 _exclude:
   # Global
+  - .git
   - .vscode
   - .mypy_cache
   # Python
@@ -42,8 +43,11 @@ _exclude:
   - "*.njsproj"
   - "*.sln"
   - "*.sw?"
+  # Copier
+  - .copier
+  - .copier.yml
 
 _answers_file: .copier/.copier-answers.yml
 
 _tasks:
-  - ["{{ _copier_python }}", .copier/post_gen_project.py]
+  - ["python", ".copier/post_gen_project.py"]
